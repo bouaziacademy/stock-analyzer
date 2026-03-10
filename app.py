@@ -100,7 +100,7 @@ with st.sidebar:
     analyze_btn = st.button(t("analyze_btn", lang), width='stretch', type="primary")
 
 # ─── Main ────────────────────────────────────────────────────────────────────
-st.title(ft("app_title", lang))
+st.title(t("app_title", lang))
 
 if analyze_btn:
     st.session_state.ticker = st.session_state.ticker_value
