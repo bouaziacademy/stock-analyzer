@@ -8,7 +8,6 @@ import yfinance as yf
 from analysis import calculate_indicators, calculate_score, get_fundamental_data
 from config import POPULAR_STOCKS
 from translations import TRANSLATIONS, LANGUAGE_NAMES, t
-from news_sentiment import get_news
 
 # ─── Page Config ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -437,115 +436,6 @@ if run_lstm:
             import traceback
             st.error(f"❌ Fehler beim Training: {str(e)}")
             st.code(traceback.format_exc())
-
-# ─── News & Sentiment ────────────────────────────────────────────────────────
-st.markdown("---")
-st.markdown(f"#### {t('news_title', lang)}")
-
-with st.spinner(t("news_loading", lang)):
-    news_data = get_news(ticker)
-
-if news_data.get("error") or not news_data["news"]:
-    st.info(t("news_none", lang))
-else:
-    # Gesamt Sentiment
-    overall = news_data["overall"]
-    score   = news_data["score"]
-    sentiment_map = {
-        "positive": t("news_positive", lang),
-        "negative": t("news_negative", lang),
-        "neutral":  t("news_neutral",  lang)
-    }
-    st.metric(t("news_overall", lang), sentiment_map.get(overall, "🟡"))
-
-    # News Karten
-    for i, news in enumerate(news_data["news"]):
-        sent  = news["sentiment"]
-        color = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}.get(sent, "🟡")
-        with st.expander(f"{color} {news['title']}"):
-            st.caption(f"📅 {news['date']} | 📰 {news['source']}")
-            st.markdown(f"[{t('news_read_more', lang)}]({news['url']})")
-
-# ─── Portfolio Tracker ────────────────────────────────────────────────────────
-st.markdown("---")
-st.markdown(f"#### {t('portfolio_title', lang)}")
-
-if "portfolio" not in st.session_state:
-    st.session_state.portfolio = []
-
-# Aktie hinzufügen
-with st.expander(t("portfolio_add", lang)):
-    col_p1, col_p2, col_p3, col_p4 = st.columns([2, 1, 1, 1])
-    p_ticker = col_p1.text_input(t("portfolio_ticker", lang), placeholder="AAPL").upper().strip()
-    p_shares = col_p2.number_input(t("portfolio_shares", lang), min_value=0.01, value=10.0, step=1.0)
-    p_price  = col_p3.number_input(t("portfolio_price", lang),  min_value=0.01, value=100.0, step=1.0)
-    if col_p4.button(t("portfolio_add_btn", lang), type="primary"):
-        if p_ticker:
-            st.session_state.portfolio.append({
-                "ticker": p_ticker,
-                "shares": p_shares,
-                "buy_price": p_price
-            })
-            st.success(f"✅ {p_ticker} {t('portfolio_add_btn', lang)}")
-            st.rerun()
-
-# Portfolio anzeigen
-if not st.session_state.portfolio:
-    st.info(t("portfolio_empty", lang))
-else:
-    portfolio_rows = []
-    total_value    = 0
-    total_cost     = 0
-
-    for item in st.session_state.portfolio:
-        try:
-            s = yf.Ticker(item["ticker"])
-            price = s.history(period="1d")["Close"].iloc[-1]
-        except Exception:
-            price = item["buy_price"]
-
-        value    = price * item["shares"]
-        cost     = item["buy_price"] * item["shares"]
-        profit   = value - cost
-        ret_pct  = ((price - item["buy_price"]) / item["buy_price"]) * 100
-
-        total_value += value
-        total_cost  += cost
-
-        portfolio_rows.append({
-            t("portfolio_stock",   lang): item["ticker"],
-            t("portfolio_shares",  lang): item["shares"],
-            t("portfolio_current", lang): f"{price:.2f}",
-            t("portfolio_value",   lang): f"{value:.2f}",
-            t("portfolio_profit",  lang): f"{profit:+.2f}",
-            t("portfolio_return",  lang): f"{ret_pct:+.1f}%"
-        })
-
-    import pandas as pd
-    port_df = pd.DataFrame(portfolio_rows)
-    st.dataframe(port_df, hide_index=True, use_container_width=True)
-
-    # Totals
-    total_profit = total_value - total_cost
-    total_ret    = ((total_value - total_cost) / total_cost * 100) if total_cost > 0 else 0
-    c1, c2, c3 = st.columns(3)
-    c1.metric(t("portfolio_total",  lang), f"{total_value:,.2f} USD")
-    c2.metric(t("portfolio_profit", lang), f"{total_profit:+,.2f} USD")
-    c3.metric(t("portfolio_return", lang), f"{total_ret:+.1f}%")
-
-    # Export CSV
-    st.markdown(f"#### {t('export_title', lang)}")
-    csv = port_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=t("export_csv", lang),
-        data=csv,
-        file_name=f"portfolio_{ticker}.csv",
-        mime="text/csv"
-    )
-
-    if st.button(t("portfolio_clear", lang)):
-        st.session_state.portfolio = []
-        st.rerun()
 
 # ─── Footer ──────────────────────────────────────────────────────────────────
 st.markdown("---")
