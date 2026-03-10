@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 from analysis import calculate_indicators, calculate_score, get_fundamental_data
 from config import POPULAR_STOCKS
+from translations import TRANSLATIONS, LANGUAGE_NAMES, t
 
 # ─── Page Config ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -43,6 +44,8 @@ st.markdown("""
 # ─── Session State initialisieren ───────────────────────────────────────────
 if "ticker_value" not in st.session_state:
     st.session_state.ticker_value = "AAPL"
+if "lang" not in st.session_state:
+    st.session_state.lang = "en"
 
 def set_ticker(sym):
     st.session_state.ticker_value = sym
@@ -50,18 +53,25 @@ def set_ticker(sym):
 # ─── Sidebar ─────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📈 Stock Analyzer Pro")
+    lang = st.selectbox(
+        "🌍 Language / Sprache / Langue / Idioma",
+        options=list(LANGUAGE_NAMES.keys()),
+        format_func=lambda x: LANGUAGE_NAMES[x],
+        index=list(LANGUAGE_NAMES.keys()).index(st.session_state.lang)
+    )
+    st.session_state.lang = lang
     st.markdown("---")
 
     ticker_input = st.text_input(
-        "🔍 Ticker-Symbol eingeben",
+        t("ticker_label", lang),
         value=st.session_state.ticker_value,
-        placeholder="z.B. AAPL, TSLA, MSFT"
+        placeholder=t("ticker_placeholder", lang)
     ).upper().strip()
 
     if ticker_input:
         st.session_state.ticker_value = ticker_input
 
-    st.markdown("**Schnellauswahl**")
+    st.markdown(t("quick_select", lang))
     cols = st.columns(3)
     for i, (name, sym) in enumerate(POPULAR_STOCKS.items()):
         if cols[i % 3].button(sym, width='stretch', key=f"btn_{sym}"):
@@ -70,27 +80,27 @@ with st.sidebar:
 
     st.markdown("---")
     period = st.selectbox(
-        "📅 Zeitraum",
+        t("period_label", lang),
         ["1mo", "3mo", "6mo", "1y", "2y", "5y"],
         index=3,
         format_func=lambda x: {
-            "1mo": "1 Monat", "3mo": "3 Monate", "6mo": "6 Monate",
+            "1mo": t("periods", lang)["1mo"], "3mo": "3 Monate", "6mo": "6 Monate",
             "1y": "1 Jahr", "2y": "2 Jahre", "5y": "5 Jahre"
         }[x]
     )
     if period in ["1mo", "3mo"]:
-        st.warning("⚠️ Für KI-Vorhersage empfohlen: **6 Monate oder mehr**")
+        st.warning(t("warning_period", lang))
 
-    show_ma      = st.checkbox("Moving Averages (MA50/MA200)", value=True)
-    show_bb      = st.checkbox("Bollinger Bands", value=True)
-    show_volume  = st.checkbox("Volumen", value=True)
+    show_ma      = st.checkbox(t("show_ma", lang), value=True)
+    show_bb      = st.checkbox(t("show_bb", lang), value=True)
+    show_volume  = st.checkbox(t("show_volume", lang), value=True)
     show_rsi     = st.checkbox("RSI", value=True)
     show_macd    = st.checkbox("MACD", value=True)
 
-    analyze_btn = st.button("🚀 Analysieren", width='stretch', type="primary")
+    analyze_btn = st.button(t("analyze_btn", lang), width='stretch', type="primary")
 
 # ─── Main ────────────────────────────────────────────────────────────────────
-st.title(f"📊 Aktienanalyse Dashboard")
+st.title(ft("app_title", lang))
 
 if analyze_btn:
     st.session_state.ticker = st.session_state.ticker_value
@@ -157,17 +167,19 @@ sig_class = {"KAUFEN": "signal-buy", "VERKAUFEN": "signal-sell", "HALTEN": "sign
 sig_emoji = {"KAUFEN": "🟢", "VERKAUFEN": "🔴", "HALTEN": "🟡"}[signal]
 
 with col_sig:
-    st.markdown("#### 🎯 Empfehlung")
-    sig_colors = {"KAUFEN": "green", "VERKAUFEN": "red", "HALTEN": "orange"}
-    st.markdown(f"## {sig_emoji} {signal}")
+    st.markdown(f"#### {t('recommendation', lang)}")
+    signal_map = {"KAUFEN": "signal_buy", "VERKAUFEN": "signal_sell", "HALTEN": "signal_hold",
+                   "BUY": "signal_buy", "SELL": "signal_sell", "HOLD": "signal_hold"}
+    signal_text = t(signal_map.get(signal, "signal_hold"), lang)
+    st.markdown(f"## {signal_text}")
 
 with col_score:
-    st.markdown("#### 📊 Gesamt-Score")
+    st.markdown(f"#### {t('total_score', lang)}")
     st.markdown(f"## {score} / 100")
     st.progress(score / 100)
 
 with col_detail:
-    st.markdown("#### 📋 Score-Aufschlüsselung")
+    st.markdown(f"#### {t('score_breakdown', lang)}")
     for name, val, max_val in score_data["breakdown"]:
         pct = val / max_val
         st.caption(f"{name}: {val}/{max_val}")
@@ -175,7 +187,7 @@ with col_detail:
 
 # ─── Main Chart ──────────────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("#### 📈 Kurschart & Indikatoren")
+st.markdown(f"#### {t('chart_title', lang)}")
 
 rows, row_heights = 1, [0.6]
 if show_volume: rows += 1; row_heights.append(0.15)
@@ -183,7 +195,7 @@ if show_rsi:    rows += 1; row_heights.append(0.12)
 if show_macd:   rows += 1; row_heights.append(0.13)
 
 subplot_titles = ["Kurs"]
-if show_volume: subplot_titles.append("Volumen")
+if show_volume: subplot_titles.append(t("show_volume", lang))
 if show_rsi:    subplot_titles.append("RSI")
 if show_macd:   subplot_titles.append("MACD")
 
@@ -210,7 +222,7 @@ if show_bb and "BB_upper" in df.columns:
 row_idx = 2
 if show_volume:
     colors = ["#00d4aa" if c >= o else "#ff4b6e" for c, o in zip(df["Close"], df["Open"])]
-    fig.add_trace(go.Bar(x=df.index, y=df["Volume"], marker_color=colors, name="Volumen", opacity=0.7), row=row_idx, col=1)
+    fig.add_trace(go.Bar(x=df.index, y=df["Volume"], marker_color=colors, name=t("show_volume", lang), opacity=0.7), row=row_idx, col=1)
     row_idx += 1
 
 if show_rsi and "RSI" in df.columns:
@@ -246,7 +258,7 @@ st.markdown("---")
 col_fund, col_tech = st.columns(2)
 
 with col_fund:
-    st.markdown("#### 🏢 Fundamentaldaten")
+    st.markdown(f"#### {t('fund_title', lang)}")
     fund_df = pd.DataFrame({
         "Kennzahl": ["Marktkapitalisierung", "KGV", "EPS", "Dividendenrendite",
                      "52W Hoch", "52W Tief", "Beta", "Sektor"],
@@ -260,7 +272,7 @@ with col_fund:
     st.dataframe(fund_df, hide_index=True, width='stretch')
 
 with col_tech:
-    st.markdown("#### 📐 Technische Signale")
+    st.markdown(f"#### {t('tech_title', lang)}")
     last = df.iloc[-1]
     rsi_val  = last.get("RSI", np.nan)
     macd_val = last.get("MACD", 0)
@@ -295,7 +307,7 @@ with col_tech:
 
 # ─── KI Vorhersage (LSTM) ────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("#### 🤖 KI-Vorhersage mit LSTM Neural Network")
+st.markdown(f"#### {t('ai_title', lang)}")
 
 col_lstm_info, col_lstm_btn = st.columns([3, 1])
 with col_lstm_info:
@@ -308,14 +320,14 @@ with col_lstm_info:
     """, unsafe_allow_html=True)
 
 with col_lstm_btn:
-    run_lstm = st.button("🚀 KI starten", width='stretch', type="primary")
+    run_lstm = st.button(t("ai_start", lang), width='stretch', type="primary")
 
 forecast_days = int(st.slider("Vorhersage-Zeitraum (Handelstage)", min_value=7, max_value=60, value=30, step=7))
 lstm_epochs = int(st.select_slider("Trainings-Epochen (mehr = genauer, aber langsamer)",
                                   options=["10", "20", "30", "50", "75", "100"], value="30"))
 
 if run_lstm:
-    with st.spinner("🧠 LSTM wird trainiert... (dauert 1–3 Minuten)"):
+    with st.spinner(t("ai_loading", lang)):
         try:
             from lstm_predictor import predict_lstm
             result = predict_lstm(df, forecast_days=int(forecast_days), epochs=int(lstm_epochs))
@@ -331,13 +343,13 @@ if run_lstm:
                 pred_sign  = "▲" if pred_delta >= 0 else "▼"
                 pred_color = "#00d4aa" if pred_delta >= 0 else "#ff4b6e"
 
-                mcard(m1, "Aktueller Kurs",   f"{last_real:.2f} {currency}")
+                mcard(m1, t("current_price_card", lang),   f"{last_real:.2f} {currency}")
                 mcard(m2, f"Prognose +{forecast_days}T",
                       f"{last_pred:.2f} {currency}",
                       f"{pred_sign} {abs(pred_delta):.1f}%",
                       "metric-delta-pos" if pred_delta >= 0 else "metric-delta-neg")
-                mcard(m3, "Modell-Genauigkeit", f"{result['accuracy']:.1f}%")
-                mcard(m4, "Fehlerbereich (±)", f"{result['std_err']:.2f} {currency}")
+                mcard(m3, t("accuracy_card", lang), f"{result['accuracy']:.1f}%")
+                mcard(m4, t("error_range", lang), f"{result['std_err']:.2f} {currency}")
 
                 # ── Vorhersage-Chart ──────────────────────────────────────────
                 fig_lstm = go.Figure()
@@ -346,7 +358,7 @@ if run_lstm:
                 fig_lstm.add_trace(go.Scatter(
                     x=result["dates_hist"], y=result["close_hist"],
                     line=dict(color="#60a5fa", width=2),
-                    name="Echter Kurs"
+                    name=t("real_price", lang)
                 ))
 
                 # Konfidenzband
@@ -360,7 +372,7 @@ if run_lstm:
                     fill="toself",
                     fillcolor="rgba(192,132,252,0.15)",
                     line=dict(color="rgba(0,0,0,0)"),
-                    name="Konfidenzbereich"
+                    name=t("confidence", lang)
                 ))
 
                 # Vorhersage-Linie
@@ -377,7 +389,7 @@ if run_lstm:
                     y=[min(result["close_hist"]) * 0.97, max(result["close_hist"]) * 1.03],
                     mode="lines",
                     line=dict(color="#f5a623", width=1.5, dash="dot"),
-                    name="Heute"
+                    name=t("today", lang)
                 ))
 
                 fig_lstm.update_layout(
@@ -419,7 +431,7 @@ if run_lstm:
                 st.info("💡 **Hinweis:** Die KI-Vorhersage basiert auf historischen Mustern. Externe Faktoren wie News, Quartalsberichte oder Marktereignisse werden nicht berücksichtigt.")
 
         except ImportError:
-            st.error("❌ TensorFlow nicht installiert. Bitte ausführen: `pip install tensorflow`")
+            st.warning("⚠️ TensorFlow nicht verfügbar in der Cloud-Version. Bitte lokal ausführen für KI-Vorhersage.")
         except Exception as e:
             import traceback
             st.error(f"❌ Fehler beim Training: {str(e)}")
