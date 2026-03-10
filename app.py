@@ -443,8 +443,11 @@ st.markdown(f"#### {t('news_title', lang)}")
 with st.spinner(t("news_loading", lang)):
     news_data = get_news(ticker)
 
-if news_data.get("error") or not news_data["news"]:
+if news_data.get("error"):
+    st.warning(f"⚠️ {t('news_none', lang)} ({news_data['error'][:100]})")
+elif not news_data["news"]:
     st.info(t("news_none", lang))
+    st.caption(f"Ticker: {ticker} — Yahoo Finance hat keine News zurückgegeben.")
 else:
     # Gesamt Sentiment
     overall = news_data["overall"]
@@ -471,21 +474,22 @@ st.markdown(f"#### {t('portfolio_title', lang)}")
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = []
 
-# Aktie hinzufügen
-with st.expander(t("portfolio_add", lang)):
-    col_p1, col_p2, col_p3, col_p4 = st.columns([2, 1, 1, 1])
-    p_ticker = col_p1.text_input(t("portfolio_ticker", lang), placeholder="AAPL").upper().strip()
-    p_shares = col_p2.number_input(t("portfolio_shares", lang), min_value=0.01, value=10.0, step=1.0)
-    p_price  = col_p3.number_input(t("portfolio_price", lang),  min_value=0.01, value=100.0, step=1.0)
-    if col_p4.button(t("portfolio_add_btn", lang), type="primary"):
-        if p_ticker:
-            st.session_state.portfolio.append({
-                "ticker": p_ticker,
-                "shares": p_shares,
-                "buy_price": p_price
-            })
-            st.success(f"✅ {p_ticker} {t('portfolio_add_btn', lang)}")
-            st.rerun()
+# Aktie hinzufügen - direkt sichtbar ohne Expander
+st.markdown(f"**{t('portfolio_add', lang)}**")
+col_p1, col_p2, col_p3, col_p4 = st.columns([2, 1, 1, 1])
+p_ticker = col_p1.text_input(t("portfolio_ticker", lang), placeholder="AAPL", key="p_ticker").upper().strip()
+p_shares = col_p2.number_input(t("portfolio_shares", lang), min_value=0.01, value=10.0, step=1.0, key="p_shares")
+p_price  = col_p3.number_input(t("portfolio_price", lang),  min_value=0.01, value=100.0, step=1.0, key="p_price")
+if col_p4.button(t("portfolio_add_btn", lang), type="primary", key="btn_add_stock"):
+    if p_ticker:
+        st.session_state.portfolio.append({
+            "ticker": p_ticker,
+            "shares": float(p_shares),
+            "buy_price": float(p_price)
+        })
+        st.success(f"✅ {p_ticker} ajouté!")
+        st.rerun()
+st.markdown("---")
 
 # Portfolio anzeigen
 if not st.session_state.portfolio:
@@ -521,7 +525,7 @@ else:
 
     import pandas as pd
     port_df = pd.DataFrame(portfolio_rows)
-    st.dataframe(port_df, hide_index=True, use_container_width=True)
+    st.dataframe(port_df, hide_index=True, width='stretch')
 
     # Totals
     total_profit = total_value - total_cost
