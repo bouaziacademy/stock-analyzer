@@ -314,17 +314,15 @@ col_lstm_info, col_lstm_btn = st.columns([3, 1])
 with col_lstm_info:
     st.markdown("""
     <div style="background:#1e2130;border-radius:10px;padding:12px 16px;border:1px solid #2d3250;font-size:13px;color:#a0a4c0;">
-    Das <b style="color:#c084fc">LSTM (Long Short-Term Memory)</b> Netzwerk lernt aus historischen Kursmustern
-    und sagt die nächsten <b style="color:#fff">30 Handelstage</b> voraus.
-    Architektur: <b style="color:#fff">LSTM(128) → LSTM(64) → Dense(32) → Output</b>
+    {t("ai_description", lang)}
     </div>
     """, unsafe_allow_html=True)
 
 with col_lstm_btn:
     run_lstm = st.button(t("ai_start", lang), width='stretch', type="primary")
 
-forecast_days = int(st.slider("Vorhersage-Zeitraum (Handelstage)", min_value=7, max_value=60, value=30, step=7))
-lstm_epochs = int(st.select_slider("Trainings-Epochen (mehr = genauer, aber langsamer)",
+forecast_days = int(st.slider(t("forecast_label", lang), min_value=7, max_value=60, value=30, step=7))
+lstm_epochs = int(st.select_slider(t("epochs_label", lang),
                                   options=["10", "20", "30", "50", "75", "100"], value="30"))
 
 if run_lstm:
@@ -405,7 +403,7 @@ if run_lstm:
                 st.plotly_chart(fig_lstm, width='stretch')
 
                 # ── Training Loss Chart ───────────────────────────────────────
-                with st.expander("📉 Trainingsverlauf anzeigen"):
+                with st.expander(t("training_history", lang)):
                     fig_loss = go.Figure()
                     fig_loss.add_trace(go.Scatter(
                         y=result["train_loss"], line=dict(color="#00d4aa", width=2), name="Training Loss"
@@ -429,7 +427,7 @@ if run_lstm:
                     </div>
                     """, unsafe_allow_html=True)
 
-                st.info("💡 **Hinweis:** Die KI-Vorhersage basiert auf historischen Mustern. Externe Faktoren wie News, Quartalsberichte oder Marktereignisse werden nicht berücksichtigt.")
+                st.info(t("ai_hint", lang))
 
         except ImportError:
             st.warning("⚠️ TensorFlow nicht verfügbar in der Cloud-Version. Bitte lokal ausführen für KI-Vorhersage.")
