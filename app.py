@@ -312,11 +312,10 @@ st.markdown(f"#### {t('ai_title', lang)}")
 
 col_lstm_info, col_lstm_btn = st.columns([3, 1])
 with col_lstm_info:
-    st.markdown("""
-    <div style="background:#1e2130;border-radius:10px;padding:12px 16px;border:1px solid #2d3250;font-size:13px;color:#a0a4c0;">
-    {t("ai_description", lang)}
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        f'<div style="background:#1e2130;border-radius:10px;padding:12px 16px;border:1px solid #2d3250;font-size:13px;color:#a0a4c0;">{t("ai_description", lang)}</div>',
+        unsafe_allow_html=True
+    )
 
 with col_lstm_btn:
     run_lstm = st.button(t("ai_start", lang), width='stretch', type="primary")
