@@ -439,9 +439,7 @@ if run_lstm:
 
 # ─── Footer ──────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("""
-<div style="text-align:center;color:#4a4f6a;font-size:12px;padding:10px;">
-    ⚠️ <b>Disclaimer:</b> Dieses Tool dient nur zu Informationszwecken. Keine Anlageberatung. 
-    Investieren birgt Risiken. Bitte konsultieren Sie einen Finanzberater.
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    f'<div style="text-align:center;color:#4a4f6a;font-size:12px;padding:10px;">{t("disclaimer", lang)}</div>',
+    unsafe_allow_html=True
+)
