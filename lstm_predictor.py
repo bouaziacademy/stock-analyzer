@@ -98,8 +98,8 @@ def predict_lstm(df, forecast_days=30, seq_len=60, epochs=30):
         )
 
         return {
-            "dates_hist" : [pd.Timestamp(str(x)[:10]).strftime("%Y-%m-%d") for x in df.index[-120:]],
-            "close_hist" : [float(x) for x in df["Close"].values[-120:]],
+            "dates_hist" : [pd.Timestamp(str(x)[:10]).strftime("%Y-%m-%d") for x in df.index],
+            "close_hist" : [float(x) for x in df["Close"].values],
             "dates_pred" : [d.strftime("%Y-%m-%d") for d in future_dates],
             "close_pred" : [float(x) for x in future_prices],
             "conf_upper" : conf_upper,
